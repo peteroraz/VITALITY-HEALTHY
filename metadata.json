@@ -1,0 +1,6 @@
+{
+  "name": "Vitality — Daily Healthy Living Guide",
+  "description": "Your personalized daily health guide providing custom nutrition plans, guided workout routines, mindful meditation sessions, and an AI health coach.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
