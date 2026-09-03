@@ -10,7 +10,8 @@ import {
   Settings, 
   Volume2, 
   VolumeX, 
-  CalendarCheck 
+  CalendarCheck,
+  LogOut,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -22,6 +23,8 @@ interface NavbarProps {
   onAddWater: (amount: number) => void;
   onToggleSound: () => void;
   onOpenProfile: () => void;
+  userEmail: string;
+  onSignOut: () => Promise<void>;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -31,7 +34,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   todayWater,
   onAddWater,
   onToggleSound,
-  onOpenProfile
+  onOpenProfile,
+  userEmail,
+  onSignOut,
 }) => {
   const tabs = [
     { id: 'daily', label: 'Daily Guide', icon: CalendarCheck },
@@ -114,6 +119,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Settings className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{userProfile.name.split(' ')[0]}</span>
+            </button>
+
+            <button
+              onClick={() => void onSignOut()}
+              className="p-2 rounded-lg border border-gray-200 bg-white text-gray-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+              title={`Sign out ${userEmail}`}
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
