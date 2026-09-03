@@ -3,6 +3,8 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 
 dotenv.config();
 
@@ -10,6 +12,33 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+
+function initializeFirebaseAdmin() {
+  if (!firebaseProjectId) return null;
+  if (!getApps().length) initializeApp({ projectId: firebaseProjectId });
+  return getAdminAuth();
+}
+
+async function requireFirebaseUser(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const authorization = req.header('authorization') || '';
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!match) return res.status(401).json({ error: 'Authentication required.' });
+
+  const adminAuth = initializeFirebaseAdmin();
+  if (!adminAuth) {
+    return res.status(503).json({ error: 'Server authentication is not configured.' });
+  }
+
+  try {
+    res.locals.firebaseUser = await adminAuth.verifyIdToken(match[1]);
+    return next();
+  } catch (error) {
+    console.warn('Rejected invalid Firebase ID token:', error);
+    return res.status(401).json({ error: 'Your login has expired. Please sign in again.' });
+  }
+}
 
 // Initialize Google GenAI lazily or when available
 function getAiClient() {
@@ -22,8 +51,11 @@ function getAiClient() {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', hasApiKey: !!process.env.GEMINI_API_KEY });
+  res.json({ status: 'ok', firebaseAuthConfigured: Boolean(firebaseProjectId) });
 });
+
+// Prevent anonymous callers from consuming protected AI endpoints.
+app.use('/api/ai', requireFirebaseUser);
 
 // AI Health Coach chat endpoint
 app.post('/api/ai/coach', async (req, res) => {

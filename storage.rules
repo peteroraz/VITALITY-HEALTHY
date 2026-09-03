@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Vitality does not use Firebase Storage yet. Keep it closed by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
