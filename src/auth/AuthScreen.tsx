@@ -1,8 +1,10 @@
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   updateProfile,
 } from 'firebase/auth';
 import { Eye, EyeOff, HeartPulse, LoaderCircle, LockKeyhole, Mail } from 'lucide-react';
@@ -21,6 +23,9 @@ function friendlyAuthError(error: unknown) {
     'auth/email-already-in-use': 'An account already exists for this email address.',
     'auth/invalid-credential': 'The email address or password is incorrect.',
     'auth/invalid-email': 'Enter a valid email address.',
+    'auth/account-exists-with-different-credential': 'An account already exists for this email. Sign in using its original method first.',
+    'auth/popup-blocked': 'Your browser blocked the Google sign-in window. Allow pop-ups and try again.',
+    'auth/popup-closed-by-user': 'Google sign-in was cancelled before it finished.',
     'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
     'auth/weak-password': 'Use a stronger password with at least 8 characters.',
     'auth/network-request-failed': 'Check your internet connection and try again.',
@@ -104,6 +109,23 @@ export function AuthScreen({ configurationError }: { configurationError?: string
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    if (configurationError) return;
+
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(requireAuth(), provider);
+    } catch (caught) {
+      setError(friendlyAuthError(caught));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-emerald-100 via-green-50 to-teal-100 px-4 py-10 flex items-center justify-center">
       <section className="w-full max-w-md rounded-3xl border border-emerald-100 bg-white p-6 sm:p-8 shadow-2xl shadow-emerald-900/10">
@@ -124,6 +146,27 @@ export function AuthScreen({ configurationError }: { configurationError?: string
           <button type="button" onClick={() => switchMode('create')} className={`rounded-lg px-3 py-2 transition ${mode === 'create' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500'}`}>
             Create account
           </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={busy || Boolean(configurationError)}
+          className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.6h3.3c1.9-1.8 2.9-4.4 2.9-7.5Z" />
+            <path fill="#34A853" d="M12 22c2.7 0 5-.9 6.7-2.3l-3.3-2.6c-.9.6-2.1 1-3.4 1a5.9 5.9 0 0 1-5.5-4.1H3.1v2.6A10 10 0 0 0 12 22Z" />
+            <path fill="#FBBC05" d="M6.5 14a6 6 0 0 1 0-3.9V7.4H3.1a10 10 0 0 0 0 9.2L6.5 14Z" />
+            <path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.8A9.7 9.7 0 0 0 3.1 7.4l3.4 2.7A5.9 5.9 0 0 1 12 5.9Z" />
+          </svg>
+          Continue with Google
+        </button>
+
+        <div className="my-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <span className="h-px flex-1 bg-gray-200" />
+          <span>or use email</span>
+          <span className="h-px flex-1 bg-gray-200" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
