@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Settings, Check, RefreshCw, Award, Heart } from 'lucide-react';
 import { UserProfile, HealthGoal, DietPreference, ActivityLevel } from '../types';
 
@@ -23,6 +23,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [activity, setActivity] = useState<ActivityLevel>(userProfile.activityLevel);
   const [water, setWater] = useState(userProfile.targetWaterMl);
   const [calories, setCalories] = useState(userProfile.targetCalories);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setName(userProfile.name);
+    setGoal(userProfile.goal);
+    setDiet(userProfile.diet);
+    setActivity(userProfile.activityLevel);
+    setWater(userProfile.targetWaterMl);
+    setCalories(userProfile.targetCalories);
+  }, [isOpen, userProfile]);
 
   if (!isOpen) return null;
 

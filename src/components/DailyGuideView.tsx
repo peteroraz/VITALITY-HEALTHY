@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { UserProfile, DailyLog, MealPlanItem, WorkoutRoutine, MeditationSession } from '../types';
+import { authenticatedFetch } from '../utils/authenticatedFetch';
 
 interface DailyGuideViewProps {
   userProfile: UserProfile;
@@ -104,7 +105,7 @@ export const DailyGuideView: React.FC<DailyGuideViewProps> = ({
     setIsGenerating(true);
     setCustomPlanNotice(null);
     try {
-      const res = await fetch('/api/ai/generate-day', {
+      const res = await authenticatedFetch('/api/ai/generate-day', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -115,6 +116,7 @@ export const DailyGuideView: React.FC<DailyGuideViewProps> = ({
           stressLevel: todayLog.moodScore < 3 ? 'high' : 'normal'
         })
       });
+      if (!res.ok) throw new Error(`Plan generation failed with status ${res.status}`);
       const data = await res.json();
       if (data && data.plan) {
         setCustomPlanNotice(`✨ AI Coach crafted a new ${availableMins}-min schedule for your ${goalLabels[userProfile.goal]} goal! Explore your customized meals and workouts in their respective tabs.`);

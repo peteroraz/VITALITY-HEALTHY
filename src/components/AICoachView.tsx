@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Send, Bot, User, HelpCircle, ArrowRight, RefreshCw } from 'lucide-react';
 import { UserProfile, ChatMessage } from '../types';
+import { authenticatedFetch } from '../utils/authenticatedFetch';
 
 interface AICoachViewProps {
   userProfile: UserProfile;
@@ -49,7 +50,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ userProfile }) => {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/ai/coach', {
+      const res = await authenticatedFetch('/api/ai/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -58,6 +59,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({ userProfile }) => {
           chatHistory: messages.slice(-6)
         })
       });
+      if (!res.ok) throw new Error(`AI Coach request failed with status ${res.status}`);
       const data = await res.json();
 
       const aiReply: ChatMessage = {

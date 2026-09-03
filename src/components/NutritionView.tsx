@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MealPlanItem, UserProfile } from '../types';
+import { authenticatedFetch } from '../utils/authenticatedFetch';
 
 interface NutritionViewProps {
   meals: MealPlanItem[];
@@ -65,7 +66,7 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
 
     setIsChefLoading(true);
     try {
-      const res = await fetch('/api/ai/ingredient-swap', {
+      const res = await authenticatedFetch('/api/ai/ingredient-swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -73,6 +74,7 @@ export const NutritionView: React.FC<NutritionViewProps> = ({
           goal: userProfile.goal
         })
       });
+      if (!res.ok) throw new Error(`Fridge Chef request failed with status ${res.status}`);
       const data = await res.json();
       setChefRecipe(data);
     } catch (err) {
