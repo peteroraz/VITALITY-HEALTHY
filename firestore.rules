@@ -1,0 +1,105 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function validProfile(profile) {
+      return profile.keys().hasAll([
+          'name', 'goal', 'diet', 'activityLevel', 'targetCalories',
+          'targetWaterMl', 'targetSleepHours', 'streakDays',
+          'soundEnabled', 'remindersEnabled'
+        ])
+        && profile.keys().hasOnly([
+          'name', 'goal', 'diet', 'activityLevel', 'targetCalories',
+          'targetWaterMl', 'targetSleepHours', 'streakDays',
+          'soundEnabled', 'remindersEnabled'
+        ])
+        && profile.name is string
+        && profile.name.size() >= 1
+        && profile.name.size() <= 100
+        && profile.goal in ['weight_loss', 'muscle_gain', 'longevity_energy', 'stress_reduction', 'balanced_vitality']
+        && profile.diet in ['omnivore', 'vegetarian', 'vegan', 'mediterranean', 'keto_lowcarb']
+        && profile.activityLevel in ['sedentary', 'moderate', 'active', 'athletic']
+        && profile.targetCalories is number
+        && profile.targetCalories >= 500
+        && profile.targetCalories <= 10000
+        && profile.targetWaterMl is number
+        && profile.targetWaterMl >= 0
+        && profile.targetWaterMl <= 20000
+        && profile.targetSleepHours is number
+        && profile.targetSleepHours >= 0
+        && profile.targetSleepHours <= 24
+        && profile.streakDays is int
+        && profile.streakDays >= 0
+        && profile.soundEnabled is bool
+        && profile.remindersEnabled is bool;
+    }
+
+    function validDailyLog(log, dateString) {
+      return log.keys().hasAll([
+          'dateString', 'waterMl', 'sleepHours', 'moodScore', 'energyScore',
+          'completedMealIds', 'completedWorkoutIds', 'completedMeditationIds',
+          'updatedAt'
+        ])
+        && log.keys().hasOnly([
+          'dateString', 'waterMl', 'sleepHours', 'moodScore', 'energyScore',
+          'completedMealIds', 'completedWorkoutIds', 'completedMeditationIds',
+          'notes', 'updatedAt'
+        ])
+        && log.dateString == dateString
+        && log.dateString is string
+        && log.dateString.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && log.waterMl is number
+        && log.waterMl >= 0
+        && log.waterMl <= 50000
+        && log.sleepHours is number
+        && log.sleepHours >= 0
+        && log.sleepHours <= 24
+        && log.moodScore is int
+        && log.moodScore >= 1
+        && log.moodScore <= 5
+        && log.energyScore is int
+        && log.energyScore >= 1
+        && log.energyScore <= 5
+        && log.completedMealIds is list
+        && log.completedMealIds.size() <= 100
+        && log.completedWorkoutIds is list
+        && log.completedWorkoutIds.size() <= 100
+        && log.completedMeditationIds is list
+        && log.completedMeditationIds.size() <= 100
+        && (!('notes' in log) || (log.notes is string && log.notes.size() <= 2000))
+        && log.updatedAt == request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['profile', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['profile', 'createdAt', 'updatedAt'])
+        && validProfile(request.resource.data.profile)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['profile', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['profile', 'createdAt', 'updatedAt'])
+        && validProfile(request.resource.data.profile)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if false;
+
+      match /dailyLogs/{dateString} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && validDailyLog(request.resource.data, dateString);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}
